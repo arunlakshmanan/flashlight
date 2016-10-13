@@ -704,7 +704,7 @@ def compute_state_space_trajectory_and_derivatives(p_body,p_look_at,y_axis_cam_h
         #
         # psi_world_from_cam_ti,  theta_world_from_cam_ti,  phi_world_from_cam_ti  = transformations.euler_from_matrix(R_world_from_cam_ti,"ryxz")
         # psi_world_from_body_ti, theta_world_from_body_ti, phi_world_from_body_ti = transformations.euler_from_matrix(R_world_from_body_ti,"ryxz")
-        #        
+        #
         # assert allclose(psi_world_from_cam_ti,   psi_world_from_body_ti)
         # assert allclose(theta_world_from_cam_ti, theta_world_from_body_ti)
         # assert allclose(phi_world_from_cam_ti,   phi_world_from_body_ti)
@@ -725,7 +725,7 @@ def compute_state_space_trajectory_and_derivatives(p_body,p_look_at,y_axis_cam_h
         #
         # sanity check that the world-from-body and body-from-camera rotation matrices
         # we compute actually maps the vector [0,0,1] to the camera x axis
-        #        
+        #
         assert allclose(c_[matrix(x_axis_cam[ti]),1].T, R_world_from_body_ti*R_body_from_cam_ti*matrix([0,0,1,1]).T)
 
         theta_cam[ti] = theta_cam_ti

@@ -57,7 +57,7 @@ theta_expr = sympy.Symbol("theta", real=True)(t_expr)
 # state and control vectors
 q_expr                 = sympy.Matrix([p_y_expr,p_x_expr,theta_expr])
 q_dot_expr             = q_expr.diff(t_expr)
-x_expr                 = sympy_utils.construct_matrix_from_block_matrix( sympy.Matrix( [ [q_expr], [q_dot_expr] ] ) )    
+x_expr                 = sympy_utils.construct_matrix_from_block_matrix( sympy.Matrix( [ [q_expr], [q_dot_expr] ] ) )
 u_expr, u_expr_entries = sympy_utils.construct_matrix_and_entries("u",(num_u_dims,1), real=True)
 
 # symbols to solve for g_dynamics, given x_current x_next u_current
@@ -323,7 +323,7 @@ def compute_df_dx_and_df_du(x,u):
 #     dgdynamics_dX  = zeros((num_dynamics_constraints_1d,num_decision_vars_X))
 #     dgdynamics_dU  = zeros((num_dynamics_constraints_1d,num_decision_vars_U))
 #     dgdynamics_ddt = zeros((num_dynamics_constraints_1d,num_decision_vars_dt))
-    
+
 #     for ti in range(num_trajectory_samples-1):
 
 #         x_current = matrix(X[ti]).T
@@ -382,7 +382,7 @@ def compute_df_dx_and_df_du(x,u):
 #     dgdynamics_dX  = zeros((num_dynamics_constraints_1d,num_decision_vars_X))
 #     dgdynamics_dU  = zeros((num_dynamics_constraints_1d,num_decision_vars_U))
 #     dgdynamics_ddt = zeros((num_dynamics_constraints_1d,num_decision_vars_dt))
-    
+
 #     for ti in range(num_trajectory_samples-1):
 
 #         x_current = matrix(X[ti]).T

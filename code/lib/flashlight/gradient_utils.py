@@ -4,7 +4,7 @@ def gradient_scalar_wrt_scalar(x,dt):
 
     return gradient(x,dt)
 
-def gradient_scalar_wrt_scalar_nonconst_dt(x,t): 
+def gradient_scalar_wrt_scalar_nonconst_dt(x,t):
 
     x            = x.astype(float64).squeeze()
     t            = t.astype(float64).squeeze()

@@ -55,7 +55,7 @@ def _get_easing_spline_coefficients(P,T=None,S=None,Z=None,degree=9):
     #return compute_catmull_rom_spline_coefficients(P,T=T,S=None,Z=None,degree=3)
 
 def _evaluate_easing_spline(C,T,sd,T_eval=None,num_samples=200):
-    return spline_utils.evaluate_minimum_variation_nonlocal_interpolating_b_spline(C,T,sd,T_eval=T_eval,num_samples=num_samples)    
+    return spline_utils.evaluate_minimum_variation_nonlocal_interpolating_b_spline(C,T,sd,T_eval=T_eval,num_samples=num_samples)
     #return evaluate_catmull_rom_spline(C,T,sd,T_eval=T_eval,num_samples=num_samples)
 
 def _compute_easing_curve(P,T=None,num_samples=200):
@@ -80,7 +80,7 @@ def _compute_easing_curve(P,T=None,num_samples=200):
 
         # then sample it
         Pev,Tev,dT = _evaluate_easing_spline(C,T,sd,num_samples=num_samples)
-        
+
         Pev[0] = 0
         Pev[-1] = 1
 
@@ -109,7 +109,7 @@ def _compute_easing_curve(P,T=None,num_samples=200):
                 has_valid_spline = False
 
         i += 1
- 
+
     assert min(Pev) > -0.0000001
     assert max(Pev) <  1.0000001
 
@@ -134,13 +134,13 @@ def _evaluate_spatial_spline(C,T,sd,T_eval=None,num_samples=200):
 def _compute_spatial_trajectory_and_arc_distance(P,T=None,S=None,num_samples=200,inNED=True):
 
     C,T,sd = _get_spatial_spline_coefficients(P,T=T,S=S,degree=9,return_derivatives=False)
-    
+
     p,T_eval,dT = _evaluate_spatial_spline(C,T,sd,num_samples=num_samples)
-    
+
     # Turn into NED:
     if not inNED:
         p = np.array([llh2ned(point, p[0]) for point in p])
-    
+
     if len(p.shape) == 1:
         p = matrix(p).T
     else:
@@ -150,14 +150,14 @@ def _compute_spatial_trajectory_and_arc_distance(P,T=None,S=None,num_samples=200
     num_dimensions            = p.shape[1]
 
     t_p_linspace = linspace(0.0,T[-1,0],num_samples_p)
-    
+
     D                   = sklearn.metrics.pairwise_distances(p,p)
     l                   = diag(D,k=1)
     l_cum               = r_[0.0,cumsum(l)]
     l_cum_f             = scipy.interpolate.interp1d(t_p_linspace, l_cum)
-    
+
     knot_arc_distances  = l_cum_f(T[:,0])
-    
+
     return C,T,sd,knot_arc_distances
 
 def _reparameterize_spline(P_spline, T_spline, P_ease, T_ease, num_samples=200, ref_llh = None, isNED=True):
@@ -169,7 +169,7 @@ def _reparameterize_spline(P_spline, T_spline, P_ease, T_ease, num_samples=200, 
 
     Input: A description of a spline, and an easing curve for time to distance (normalized).
 
-    Calculates the (time -> distance -> spline parameter) mapping. 
+    Calculates the (time -> distance -> spline parameter) mapping.
     Returns the resulting table of time to spline parameter values, such that
     sweeping linearly through time will result in spline parameters that move along the spline
     according to the time->distance easing curve.
@@ -182,8 +182,8 @@ def _reparameterize_spline(P_spline, T_spline, P_ease, T_ease, num_samples=200, 
 
     # Then sample that densely
     Spline_eval,T_spline_eval,dT_spline = _evaluate_spatial_spline(C_spline,T_spline,sd_spline,num_samples=num_samples)
-    Ease_eval,T_ease_eval,dT_ease = _evaluate_easing_spline(C_ease,T_ease,sd_ease,num_samples=num_samples)    
-    
+    Ease_eval,T_ease_eval,dT_ease = _evaluate_easing_spline(C_ease,T_ease,sd_ease,num_samples=num_samples)
+
     if not isNED:
         if ref_llh is None:
             ref_llh = Spline_eval[0]
@@ -197,7 +197,7 @@ def _reparameterize_spline(P_spline, T_spline, P_ease, T_ease, num_samples=200, 
 
     # Finally, reparameterize the spline curve first into dist then modulate with ease
     p_user_progress, t_user_progress, cumLength, t_user_progress_linspace_norm = curve_utils.reparameterize_curve(Spline_eval,Ease_eval)
-    
+
     # Then return a table of t_user_progress_linspace_norm
     return t_user_progress_linspace_norm, t_user_progress, p_user_progress, ref_llh
 
@@ -209,8 +209,8 @@ def _evaluate_splines_and_convert_to_meters(P_spline, T_spline, P_ease, T_ease, 
 
     # Then sample that densely
     Spline_eval,T_spline_eval,dT_spline = _evaluate_spatial_spline(C_spline,T_spline,sd_spline,num_samples=num_samples)
-    Ease_eval,T_ease_eval,dT_ease = _evaluate_easing_spline(C_ease,T_ease,sd_ease,num_samples=num_samples)    
-    
+    Ease_eval,T_ease_eval,dT_ease = _evaluate_easing_spline(C_ease,T_ease,sd_ease,num_samples=num_samples)
+
     if not isNED:
         if ref_llh is None:
             ref_llh = Spline_eval[0]

@@ -504,7 +504,7 @@ def _compute_minimum_variation_catmull_rom_spline_coefficients_scalar(t_keyframe
     beta  = bmat([[ zeros((P.shape[0],1)) ],[ b ]])
     chi   = linalg.solve(Alpha,beta)
     c     = chi[0:P.shape[0]].A1
-    
+
     # assert allclose(c,c_cvx)
 
     return c
@@ -639,7 +639,7 @@ def _compute_catmull_rom_spline_linear_system_degree_3(t,p,pd1,sd):
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -680,7 +680,7 @@ def _compute_catmull_rom_spline_linear_system_degree_5(t,p,pd1,pd2,sd):
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -698,9 +698,9 @@ def _compute_catmull_rom_spline_linear_system_degree_5(t,p,pd1,pd2,sd):
         b[r+3]                                    = pd1["segments_end"][si]
         b[r+4]                                    = pd2["segments_begin"][si]
         b[r+5]                                    = pd2["segments_end"][si]
-        
+
     for si in sd["straight_line_segments"]:
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -729,7 +729,7 @@ def _compute_catmull_rom_spline_linear_system_degree_7(t,p,pd1,pd2,pd3,sd):
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -751,9 +751,9 @@ def _compute_catmull_rom_spline_linear_system_degree_7(t,p,pd1,pd2,pd3,sd):
         b[r+5]                                    = pd2["segments_end"][si]
         b[r+6]                                    = pd3["segments_begin"][si]
         b[r+7]                                    = pd3["segments_end"][si]
-        
+
     for si in sd["straight_line_segments"]:
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -786,7 +786,7 @@ def _compute_catmull_rom_spline_linear_system_degree_9(t,p,pd1,pd2,pd3,pd4,sd):
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -814,7 +814,7 @@ def _compute_catmull_rom_spline_linear_system_degree_9(t,p,pd1,pd2,pd3,pd4,sd):
         b[r+9]                                    = pd4["segments_end"][si]
 
     for si in sd["straight_line_segments"]:
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -851,7 +851,7 @@ def _compute_minimum_variation_catmull_rom_spline_linear_system_degree_5(t,p,pd1
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -876,7 +876,7 @@ def _compute_minimum_variation_catmull_rom_spline_linear_system_degree_7(t,p,pd1
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -905,7 +905,7 @@ def _compute_minimum_variation_catmull_rom_spline_linear_system_degree_9(t,p,pd1
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -938,7 +938,7 @@ def _compute_minimum_variation_catmull_rom_spline_linear_system_degree_11(t,p,pd
     b = zeros((sd["num_segments"]*sd["num_constraints_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r       = si*sd["num_constraints_per_segment"]
         c       = si*sd["num_unknowns_per_segment"]
         t_begin = 0
@@ -982,7 +982,7 @@ def _compute_minimum_variation_catmull_rom_spline_quadratic_objective_degree_5(s
     q = zeros((sd["num_segments"]*sd["num_unknowns_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r                                            = si*sd["num_unknowns_per_segment"]
         c                                            = si*sd["num_unknowns_per_segment"]
 
@@ -1040,7 +1040,7 @@ def _compute_minimum_variation_catmull_rom_spline_quadratic_objective_degree_7(s
     q = zeros((sd["num_segments"]*sd["num_unknowns_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r                                            = si*sd["num_unknowns_per_segment"]
         c                                            = si*sd["num_unknowns_per_segment"]
 
@@ -1108,7 +1108,7 @@ def _compute_minimum_variation_catmull_rom_spline_quadratic_objective_degree_9(s
     q = zeros((sd["num_segments"]*sd["num_unknowns_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r                                            = si*sd["num_unknowns_per_segment"]
         c                                            = si*sd["num_unknowns_per_segment"]
 
@@ -1187,7 +1187,7 @@ def _compute_minimum_variation_catmull_rom_spline_quadratic_objective_degree_11(
     q = zeros((sd["num_segments"]*sd["num_unknowns_per_segment"],1))
 
     for si in range(sd["num_segments"]):
-        
+
         r                                             = si*sd["num_unknowns_per_segment"]
         c                                             = si*sd["num_unknowns_per_segment"]
 
@@ -1285,7 +1285,7 @@ def _compute_nonlocal_interpolating_b_spline_linear_system_degree_3(t,p,sd):
     b = zeros((b_num_rows,1))
 
     for si in range(sd["num_segments"]):
-        
+
         r              = si*sd["num_constraints_per_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
         c_coeffs_end   = (si + 1)*sd["num_unknowns_per_segment"]
@@ -1420,7 +1420,7 @@ def _compute_minimum_variation_nonlocal_interpolating_b_spline_linear_system_deg
     # polynomial segment constraints
     #
     for psi in range(sd["num_polynomial_segments"]):
-        
+
         si             = sd["polynomial_segments"][psi]
         r              = psi*sd["num_constraints_per_polynomial_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
@@ -1479,7 +1479,7 @@ def _compute_minimum_variation_nonlocal_interpolating_b_spline_linear_system_deg
     # straight line segment constraints
     #
     for slsi in range(sd["num_straight_line_segments"]):
-        
+
         si             = sd["straight_line_segments"][slsi]
         r              = slsi*sd["num_constraints_per_straight_line_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
@@ -1550,7 +1550,7 @@ def _compute_minimum_variation_nonlocal_interpolating_b_spline_linear_system_deg
     # polynomial segment constraints
     #
     for psi in range(sd["num_polynomial_segments"]):
-        
+
         si             = sd["polynomial_segments"][psi]
         r              = psi*sd["num_constraints_per_polynomial_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
@@ -1609,7 +1609,7 @@ def _compute_minimum_variation_nonlocal_interpolating_b_spline_linear_system_deg
     # straight line segment constraints
     #
     for slsi in range(sd["num_straight_line_segments"]):
-        
+
         si             = sd["straight_line_segments"][slsi]
         r              = slsi*sd["num_constraints_per_straight_line_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
@@ -1684,7 +1684,7 @@ def _compute_minimum_variation_nonlocal_interpolating_b_spline_linear_system_deg
     # polynomial segment constraints
     #
     for psi in range(sd["num_polynomial_segments"]):
-        
+
         si             = sd["polynomial_segments"][psi]
         r              = psi*sd["num_constraints_per_polynomial_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
@@ -1743,7 +1743,7 @@ def _compute_minimum_variation_nonlocal_interpolating_b_spline_linear_system_deg
     # straight line segment constraints
     #
     for slsi in range(sd["num_straight_line_segments"]):
-        
+
         si             = sd["straight_line_segments"][slsi]
         r              = slsi*sd["num_constraints_per_straight_line_segment"]
         c_coeffs_begin = si*sd["num_unknowns_per_segment"]
@@ -1822,7 +1822,7 @@ def _compute_trigonometric_spline_linear_system_order_2(t,p,pd1,sd):
     t_end   = pi/4
 
     for si in range(sd["num_segments"]):
-        
+
         r                                         = si*sd["num_constraints_per_segment"]
         c                                         = si*sd["num_unknowns_per_segment"]
         A[r,  c:c+sd["num_unknowns_per_segment"]] = [1, cos(t_begin),  cos(2*t_begin),    sin(t_begin)]
@@ -1847,7 +1847,7 @@ def _compute_trigonometric_spline_linear_system_order_5(t,p,pd1,pd2,pd3,pd4,sd):
     t_end   = pi/4
 
     for si in range(sd["num_segments"]):
-        
+
         r                                         = si*sd["num_constraints_per_segment"]
         c                                         = si*sd["num_unknowns_per_segment"]
 
@@ -1915,7 +1915,7 @@ def _evaluate_polynomial_spline_scalar(t_eval,c,t_keyframes,sd):
     for ti in range(t_eval.shape[0]):
 
         t_eval_val = t_eval[ti]
-        
+
         while si+1 < sd["num_segments"] and t_eval_val >= t_keyframes[si+1]:
             si += 1
 
@@ -1934,7 +1934,7 @@ def _evaluate_polynomial_spline_scalar(t_eval,c,t_keyframes,sd):
             t_eval_bar_pows = matrix([t_eval_bar_val**0,t_eval_bar_val**1,t_eval_bar_val**2,t_eval_bar_val**3,t_eval_bar_val**4,t_eval_bar_val**5,t_eval_bar_val**6,t_eval_bar_val**7,t_eval_bar_val**8,t_eval_bar_val**9,t_eval_bar_val**10,t_eval_bar_val**11])
 
         c_segment = matrix(c[ci:ci+sd["num_unknowns_per_segment"]]).T
-        
+
         p_eval[ti] = t_eval_bar_pows*c_segment
 
     return p_eval
@@ -1962,7 +1962,7 @@ def _evaluate_trigonometric_spline_scalar(t_eval,c,t_keyframes,sd):
             t_eval_bar_trig_funcs = matrix([1, cos(t_eval_bar_val), cos(2*t_eval_bar_val), cos(3*t_eval_bar_val), cos(4*t_eval_bar_val), cos(5*t_eval_bar_val), sin(t_eval_bar_val), sin(2*t_eval_bar_val), sin(3*t_eval_bar_val), sin(4*t_eval_bar_val)])
 
         c_segment = matrix(c[ci:ci+sd["num_unknowns_per_segment"]]).T
-        
+
         p_eval[ti] = t_eval_bar_trig_funcs*c_segment
 
     return p_eval

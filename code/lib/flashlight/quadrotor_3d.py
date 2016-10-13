@@ -70,7 +70,7 @@ phi_expr   = sympy.Symbol("phi",   real=True)(t_expr)
 # state and control vectors
 q_expr                 = sympy.Matrix([p_z_expr,p_y_expr,p_x_expr,theta_expr,psi_expr,phi_expr])
 q_dot_expr             = q_expr.diff(t_expr)
-x_expr                 = sympy_utils.construct_matrix_from_block_matrix( sympy.Matrix( [ [q_expr], [q_dot_expr] ] ) )    
+x_expr                 = sympy_utils.construct_matrix_from_block_matrix( sympy.Matrix( [ [q_expr], [q_dot_expr] ] ) )
 u_expr, u_expr_entries = sympy_utils.construct_matrix_and_entries("u",(num_u_dims,1))
 
 # symbols to solve for g_dynamics, given x_current x_next u_current

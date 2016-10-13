@@ -10,8 +10,8 @@ import sympy.utilities.autowrap
 
 
 
-cc_compiler  = "/usr/local/bin/gcc-4.9"
-cxx_compiler = "/usr/local/bin/g++-4.9"
+cc_compiler  = "/usr/bin/gcc"
+cxx_compiler = "/usr/bin/g++"
 
 
 
@@ -20,7 +20,7 @@ cxx_compiler = "/usr/local/bin/g++-4.9"
 #
 
 def construct_matrix_and_entries(prefix_name,shape,real=True):
-    
+
     A = sympy.Matrix.zeros(shape[0],shape[1])
     for r in range(A.rows):
         for c in range(A.cols):
@@ -184,7 +184,7 @@ def euler_from_matrix(A_expr,axes="sxyz"):
         #     ax = math.atan2(-M[j, k],  M[j, j])
         #     ay = math.atan2( sy,       M[i, i])
         #     az = 0.0
-        
+
         sy = sympy.sqrt(M[i, j]*M[i, j] + M[i, k]*M[i, k])
 
         ax = sympy.Piecewise( ( arctan2(  M[i, j],  M[i, k] ), sy > transformations._EPS ), \
@@ -330,7 +330,7 @@ def dummify(expr,syms,pretty_dummy_symbol_names=False):
     return new_expr,new_syms
 
 def collect_into_dict_include_zero_and_constant_terms(expr, syms):
-    
+
     expr_terms_dict = sympy.collect(expr,syms,exact=True,evaluate=False)
     for sym in syms:
         if sym not in expr_terms_dict.keys(): expr_terms_dict[sym] = 0
@@ -493,7 +493,7 @@ def _autowrap_skip_compile(expr, language=None, backend='f2py', tempdir=None, ar
     return _wrap_code_skip_compile(code_wrapper, routine, helpers=helps)
 
 def generate_c_code(expr,syms,func_name,tmp_dir,out_dir,verbose=False,request_delete_tmp_dir=True):
-    
+
     tmp_dir_exists_before_call = os.path.exists(tmp_dir)
 
     syms = list(syms)
@@ -600,7 +600,7 @@ def generate_c_code_cse(expr,syms,func_name,tmp_dir,out_dir,cse_ordering="canoni
     expr_in_terms_of_subexprs = [ expr.subs(relational_subexprs)  for expr  in expr_in_terms_of_subexprs ]
 
     is_matrix_expr = isinstance(expr,sympy.Matrix) or isinstance(expr,sympy.MutableMatrix) or isinstance(expr,sympy.ImmutableMatrix)
-    
+
     for subexpr_kv in subexpr_list:
 
         subexpr_name_expr   = subexpr_kv[0]
@@ -609,7 +609,7 @@ def generate_c_code_cse(expr,syms,func_name,tmp_dir,out_dir,cse_ordering="canoni
         include_str         = include_str      + '#include "%s_autofunc.c"\n' % subexpr_c_func_name
         subexpr_eval_str    = subexpr_eval_str + "    double %s = %s_autofunc(%s);\n" % (subexpr_name_expr,subexpr_c_func_name,str(syms_incl_temp_vars)[1:-1].replace("'",""))
 
-        generate_c_code(subexpr_func_expr,syms_incl_temp_vars,subexpr_c_func_name,tmp_dir,out_dir,verbose=verbose,request_delete_tmp_dir=request_delete_tmp_dir)    
+        generate_c_code(subexpr_func_expr,syms_incl_temp_vars,subexpr_c_func_name,tmp_dir,out_dir,verbose=verbose,request_delete_tmp_dir=request_delete_tmp_dir)
         syms_incl_temp_vars.append(subexpr_name_expr)
 
     expr_in_terms_of_subexprs_c_func_name = func_name+"_in_terms_of_subexprs"
@@ -626,7 +626,7 @@ def generate_c_code_cse(expr,syms,func_name,tmp_dir,out_dir,cse_ordering="canoni
         return_type_str    = "double"
         func_signature_str = str( [ "double %s" % str(sym) for sym in syms_not_incl_temp_vars ] )[1:-1].replace("'","")
         subexpr_eval_str   = subexpr_eval_str + "\n    return %s_autofunc(%s);" % (expr_in_terms_of_subexprs_c_func_name,str(syms_incl_temp_vars)[1:-1].replace("'",""))
-        
+
     cse_autofunc_h_str_eval = cse_autofunc_h_str % (func_name.upper(),func_name.upper(),return_type_str,func_signature_str)
     cse_autofunc_c_str_eval = cse_autofunc_c_str % (func_name,        include_str,      return_type_str,func_signature_str,subexpr_eval_str)
 
@@ -715,7 +715,7 @@ def build_module_autowrap(expr,syms,module_name,tmp_dir,out_dir,dummify=False,cs
     is_matrix_expr = isinstance(expr,sympy.Matrix) or isinstance(expr,sympy.MutableMatrix) or isinstance(expr,sympy.ImmutableMatrix)
 
     if dummify:
-        if verbose: print "flashlight.sympy: Generating dummy symbols for %s..." % module_name        
+        if verbose: print "flashlight.sympy: Generating dummy symbols for %s..." % module_name
         expr,syms = _dummify(expr,syms,pretty_dummy_symbol_names)
         if verbose: print "flashlight.sympy: Finished generating dummy symbols for %s." % module_name
 

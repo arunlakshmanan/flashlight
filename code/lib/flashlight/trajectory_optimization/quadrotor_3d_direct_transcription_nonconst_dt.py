@@ -6,18 +6,18 @@ import scipy.interpolate
 import sklearn.metrics
 import sympy
 
-import pathutils
-pathutils.add_relative_to_current_source_file_path_to_sys_path("..")
+import path_utils
+path_utils.add_relative_to_current_source_file_path_to_sys_path("..")
 
-import flashlight.splineutils      as splineutils
-import flashlight.curveutils       as curveutils
-import flashlight.gradientutils    as gradientutils
-import flashlight.interpolateutils as interpolateutils
-import flashlight.sympyutils       as sympyutils
-import flashlight.quadrotor3d      as quadrotor3d
+import flashlight.spline_utils      as spline_utils
+import flashlight.curve_utils       as curve_utils
+import flashlight.gradient_utils    as gradient_utils
+import flashlight.interpolate_utils as interpolate_utils
+import flashlight.sympy_utils       as sympy_utils
+import flashlight.quadrotor_3d      as quadrotor_3d
 
-import flashlight.trajectory_optimization.quadrotor3d_uniform_time_stretch  as quadrotor3d_uniform_time_stretch
-import flashlight.trajectory_optimization.quadrotor3d_gaussian_time_stretch as quadrotor3d_gaussian_time_stretch
+import flashlight.trajectory_optimization.quadrotor_3d_uniform_time_stretch  as quadrotor_3d_uniform_time_stretch
+import flashlight.trajectory_optimization.quadrotor_3d_gaussian_time_stretch as quadrotor_3d_gaussian_time_stretch
 
 from optimize.snopt7 import SNOPT_solver
 
@@ -58,26 +58,26 @@ dt_prev_feasible_vals = None
 
 if build_sympy_modules:
 
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Constructing sympy symbols..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Constructing sympy symbols..."
     sys_time_begin = time.time()
 
-    x_ti_expr, x_ti_expr_entries = sympyutils.construct_matrix_and_entries("x_ti", (num_x_dims,1))
-    u_ti_expr, u_ti_expr_entries = sympyutils.construct_matrix_and_entries("u_ti", (num_u_dims,1))
+    x_ti_expr, x_ti_expr_entries = sympy_utils.construct_matrix_and_entries("x_ti", (num_x_dims,1))
+    u_ti_expr, u_ti_expr_entries = sympy_utils.construct_matrix_and_entries("u_ti", (num_u_dims,1))
     dt_ti_expr                  = sympy.Symbol("delta_t_ti")
 
     lamb_J_control_effort_ti_expr = sympy.Symbol("lamb_J_control_effort_ti")
 
     lamb_J_x_p_waypoint_ti_expr                                    = sympy.Symbol("lamb_J_x_p_waypoint_ti")
-    J_x_p_waypoint_ref_ti_expr, J_x_p_waypoint_ref_ti_expr_entries = sympyutils.construct_matrix_and_entries("J_x_p_waypoint_ref_ti", (num_dims_J_x_p_waypoint_ref_ti,1))
+    J_x_p_waypoint_ref_ti_expr, J_x_p_waypoint_ref_ti_expr_entries = sympy_utils.construct_matrix_and_entries("J_x_p_waypoint_ref_ti", (num_dims_J_x_p_waypoint_ref_ti,1))
 
     lamb_J_dt_ti_expr = sympy.Symbol("lamb_J_dt_ti")
     J_dt_ref_ti_expr  = sympy.Symbol("J_dt_ref_ti")
 
     lamb_g_x_waypoint_ti_expr                              = sympy.Symbol("lamb_g_x_waypoint_ti")
-    x_waypoint_ref_ti_expr, x_waypoint_ref_ti_expr_entries = sympyutils.construct_matrix_and_entries("x_waypoint_ref_ti", (num_dims_x_waypoint_ref_ti,1))
+    x_waypoint_ref_ti_expr, x_waypoint_ref_ti_expr_entries = sympy_utils.construct_matrix_and_entries("x_waypoint_ref_ti", (num_dims_x_waypoint_ref_ti,1))
 
     lamb_g_x_p_waypoint_ti_expr                                = sympy.Symbol("lamb_g_x_p_waypoint_ti")
-    x_p_waypoint_ref_ti_expr, x_p_waypoint_ref_ti_expr_entries = sympyutils.construct_matrix_and_entries("x_p_waypoint_ref_ti", (num_dims_x_p_waypoint_ref_ti,1))
+    x_p_waypoint_ref_ti_expr, x_p_waypoint_ref_ti_expr_entries = sympy_utils.construct_matrix_and_entries("x_p_waypoint_ref_ti", (num_dims_x_p_waypoint_ref_ti,1))
 
     lamb_g_dt_ti_expr = sympy.Symbol("lamb_g_dt_ti")
     dt_ref_ti_expr    = sympy.Symbol("dt_ref_ti")
@@ -88,18 +88,18 @@ if build_sympy_modules:
     common_syms = hstack( [ lamb_syms, ref_syms, var_syms ] )
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Finished constructing sympy symbols (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Finished constructing sympy symbols (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Constructing sympy expressions..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Constructing sympy expressions..."
     sys_time_begin = time.time()
 
     J_ti_expr = \
-        lamb_J_control_effort_ti_expr * ( sympyutils.square(sympyutils.norm(u_ti_expr)) * dt_ti_expr )                             + \
-        lamb_J_x_p_waypoint_ti_expr   * ( sympyutils.square(sympyutils.norm(x_ti_expr[x_p_inds,:] - J_x_p_waypoint_ref_ti_expr)) ) + \
-        lamb_J_dt_ti_expr             * ( sympyutils.square((dt_ti_expr - J_dt_ref_ti_expr)) )
+        lamb_J_control_effort_ti_expr * ( sympy_utils.square(sympy_utils.norm(u_ti_expr)) * dt_ti_expr )                             + \
+        lamb_J_x_p_waypoint_ti_expr   * ( sympy_utils.square(sympy_utils.norm(x_ti_expr[x_p_inds,:] - J_x_p_waypoint_ref_ti_expr)) ) + \
+        lamb_J_dt_ti_expr             * ( sympy_utils.square((dt_ti_expr - J_dt_ref_ti_expr)) )
 
-    dJti_dxti_expr  = sympyutils.diff_scalar_wrt_vector(J_ti_expr,x_ti_expr)
-    dJti_duti_expr  = sympyutils.diff_scalar_wrt_vector(J_ti_expr,u_ti_expr)
+    dJti_dxti_expr  = sympy_utils.diff_scalar_wrt_vector(J_ti_expr,x_ti_expr)
+    dJti_duti_expr  = sympy_utils.diff_scalar_wrt_vector(J_ti_expr,u_ti_expr)
     dJti_ddtti_expr = J_ti_expr.diff(dt_ti_expr)
 
     g_x_waypoint_ti_expr    = lamb_g_x_waypoint_ti_expr * ( x_ti_expr - x_waypoint_ref_ti_expr )
@@ -112,56 +112,56 @@ if build_sympy_modules:
     dgdtti_ddtti_expr = g_dt_ti_expr.diff(dt_ti_expr)
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Finished constructing sympy expressions (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Finished constructing sympy expressions (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Building sympy modules..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Building sympy modules..."
     sys_time_begin = time.time()
 
-    current_source_file_path = pathutils.get_current_source_file_path()
+    current_source_file_path = path_utils.get_current_source_file_path()
 
-    sympyutils.build_module_autowrap( expr=J_ti_expr,                syms=common_syms, module_name="J_ti",                tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dJti_dxti_expr,           syms=common_syms, module_name="dJti_dxti",           tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dJti_duti_expr,           syms=common_syms, module_name="dJti_duti",           tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dJti_ddtti_expr,          syms=common_syms, module_name="dJti_ddtti",          tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=g_x_waypoint_ti_expr,     syms=common_syms, module_name="g_x_waypoint_ti",     tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgxwaypointti_dxti_expr,  syms=common_syms, module_name="dgxwaypointti_dxti",  tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=g_x_p_waypoint_ti_expr,   syms=common_syms, module_name="g_x_p_waypoint_ti",   tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgxpwaypointti_dxti_expr, syms=common_syms, module_name="dgxpwaypointti_dxti", tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=g_dt_ti_expr,             syms=common_syms, module_name="g_dt_ti",             tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgdtti_ddtti_expr,        syms=common_syms, module_name="dgdtti_ddtti",        tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=J_ti_expr,                syms=common_syms, module_name="J_ti",                tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dJti_dxti_expr,           syms=common_syms, module_name="dJti_dxti",           tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dJti_duti_expr,           syms=common_syms, module_name="dJti_duti",           tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dJti_ddtti_expr,          syms=common_syms, module_name="dJti_ddtti",          tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=g_x_waypoint_ti_expr,     syms=common_syms, module_name="g_x_waypoint_ti",     tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgxwaypointti_dxti_expr,  syms=common_syms, module_name="dgxwaypointti_dxti",  tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=g_x_p_waypoint_ti_expr,   syms=common_syms, module_name="g_x_p_waypoint_ti",   tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgxpwaypointti_dxti_expr, syms=common_syms, module_name="dgxpwaypointti_dxti", tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=g_dt_ti_expr,             syms=common_syms, module_name="g_dt_ti",             tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgdtti_ddtti_expr,        syms=common_syms, module_name="dgdtti_ddtti",        tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt", build_vectorized=True, verbose=True, request_delete_tmp_dir=True )
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Finished building sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Finished building sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
-print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Loading sympy modules..."
+print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Loading sympy modules..."
 sys_time_begin = time.time()
 
-current_source_file_path = pathutils.get_current_source_file_path()
+current_source_file_path = path_utils.get_current_source_file_path()
 
-J_ti_autowrap                = sympyutils.import_anon_func_from_from_module_autowrap( module_name="J_ti",                path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dJti_dxti_autowrap           = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJti_dxti",           path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dJti_duti_autowrap           = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJti_duti",           path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dJti_ddtti_autowrap          = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJti_ddtti",          path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-g_x_waypoint_ti_autowrap     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_x_waypoint_ti",     path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dgxwaypointti_dxti_autowrap  = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgxwaypointti_dxti",  path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-g_x_p_waypoint_ti_autowrap   = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_x_p_waypoint_ti",   path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dgxpwaypointti_dxti_autowrap = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgxpwaypointti_dxti", path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-g_dt_ti_autowrap             = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_dt_ti",             path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dgdtti_ddtti_autowrap        = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdtti_ddtti",        path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
+J_ti_autowrap                = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="J_ti",                path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dJti_dxti_autowrap           = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJti_dxti",           path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dJti_duti_autowrap           = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJti_duti",           path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dJti_ddtti_autowrap          = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJti_ddtti",          path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+g_x_waypoint_ti_autowrap     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_x_waypoint_ti",     path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dgxwaypointti_dxti_autowrap  = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgxwaypointti_dxti",  path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+g_x_p_waypoint_ti_autowrap   = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_x_p_waypoint_ti",   path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dgxpwaypointti_dxti_autowrap = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgxpwaypointti_dxti", path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+g_dt_ti_autowrap             = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_dt_ti",             path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dgdtti_ddtti_autowrap        = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdtti_ddtti",        path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
 
-J_ti_vectorized_autowrap                = sympyutils.import_anon_func_from_from_module_autowrap( module_name="J_ti_vectorized",                path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dJti_dxti_vectorized_autowrap           = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJti_dxti_vectorized",           path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dJti_duti_vectorized_autowrap           = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJti_duti_vectorized",           path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dJti_ddtti_vectorized_autowrap          = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJti_ddtti_vectorized",          path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-g_x_waypoint_ti_vectorized_autowrap     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_x_waypoint_ti_vectorized",     path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dgxwaypointti_dxti_vectorized_autowrap  = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgxwaypointti_dxti_vectorized",  path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-g_x_p_waypoint_ti_vectorized_autowrap   = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_x_p_waypoint_ti_vectorized",   path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dgxpwaypointti_dxti_vectorized_autowrap = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgxpwaypointti_dxti_vectorized", path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-g_dt_ti_vectorized_autowrap             = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_dt_ti_vectorized",             path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
-dgdtti_ddtti_vectorized_autowrap        = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdtti_ddtti_vectorized",        path=current_source_file_path+"/data/quadrotor3d_direct_transcription_nonconst_dt" )
+J_ti_vectorized_autowrap                = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="J_ti_vectorized",                path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dJti_dxti_vectorized_autowrap           = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJti_dxti_vectorized",           path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dJti_duti_vectorized_autowrap           = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJti_duti_vectorized",           path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dJti_ddtti_vectorized_autowrap          = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJti_ddtti_vectorized",          path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+g_x_waypoint_ti_vectorized_autowrap     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_x_waypoint_ti_vectorized",     path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dgxwaypointti_dxti_vectorized_autowrap  = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgxwaypointti_dxti_vectorized",  path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+g_x_p_waypoint_ti_vectorized_autowrap   = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_x_p_waypoint_ti_vectorized",   path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dgxpwaypointti_dxti_vectorized_autowrap = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgxpwaypointti_dxti_vectorized", path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+g_dt_ti_vectorized_autowrap             = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_dt_ti_vectorized",             path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
+dgdtti_ddtti_vectorized_autowrap        = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdtti_ddtti_vectorized",        path=current_source_file_path+"/data/quadrotor_3d_direct_transcription_nonconst_dt" )
 
 sys_time_end = time.time()
-print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Finished loading sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
+print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Finished loading sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
 
 
@@ -173,14 +173,14 @@ def optimize(p_eval,psi_eval,                            \
 
     assert allclose(psi_eval,0.0)
 
-    print "flashlight.trajectory_optimization.quadrotor3d_direct_transcription_nonconst_dt: Initializing optimization problem..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_direct_transcription_nonconst_dt: Initializing optimization problem..."
     sys_time_begin    = time.time()
     solver_time_begin = sys_time_begin
 
     #
     # find numerically stable and feasible trajectories to initialize the solver
     #
-    numerically_stable_infeasible_trajectory = quadrotor3d_gaussian_time_stretch.optimize_numerically_stable_infeasible( p_eval,psi_eval,                               \
+    numerically_stable_infeasible_trajectory = quadrotor_3d_gaussian_time_stretch.optimize_numerically_stable_infeasible( p_eval,psi_eval,                               \
                                                                                                                          t_nominal,user_progress_nominal,dt_nominal,    \
                                                                                                                          x_min_ti,x_max_ti,                             \
                                                                                                                          u_min_ti,u_max_ti,                             \
@@ -194,7 +194,7 @@ def optimize(p_eval,psi_eval,                            \
     if use_gaussian_time_stretching_for_feasible:
 
         # use gaussian time stretching to find a feasible trajectory
-        feasible_trajectory = quadrotor3d_gaussian_time_stretch.optimize_feasible( p_eval,psi_eval,                                                             \
+        feasible_trajectory = quadrotor_3d_gaussian_time_stretch.optimize_feasible( p_eval,psi_eval,                                                             \
                                                                                    t_numerically_stable,user_progress_numerically_stable,dt_numerically_stable, \
                                                                                    x_min_ti,x_max_ti,                                                           \
                                                                                    u_min_ti,u_max_ti,                                                           \
@@ -208,10 +208,10 @@ def optimize(p_eval,psi_eval,                            \
     else:
 
         # use uniform time stretching to find a feasible trajectory
-        p_nominal, _, _, _   = curveutils.reparameterize_curve( p_eval, user_progress_nominal )
-        psi_nominal, _, _, _ = curveutils.reparameterize_curve( psi_eval, user_progress_nominal )
+        p_nominal, _, _, _   = curve_utils.reparameterize_curve( p_eval, user_progress_nominal )
+        psi_nominal, _, _, _ = curve_utils.reparameterize_curve( psi_eval, user_progress_nominal )
 
-        feasible_trajectory = quadrotor3d_uniform_time_stretch.optimize_feasible( p_nominal,psi_nominal,dt_nominal, \
+        feasible_trajectory = quadrotor_3d_uniform_time_stretch.optimize_feasible( p_nominal,psi_nominal,dt_nominal, \
                                                                                   x_min_ti,x_max_ti,                \
                                                                                   u_min_ti,u_max_ti,                \
                                                                                   max_bin_search_iters_feasible,    \
@@ -226,14 +226,14 @@ def optimize(p_eval,psi_eval,                            \
     # return user_progress_feasible,None,None,None,None,t_feasible,t_feasible[-1]
 
     sys_time_end = time.time()
-    print "flashlight.optimize.quadrotor3d_fixed_path: Finished initializing optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.optimize.quadrotor_3d_fixed_path: Finished initializing optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
     #
     # set up optimization problem constants
     #
     num_trajectory_samples = p_eval.shape[0]
-    num_x_dims             = quadrotor3d.num_x_dims
-    num_u_dims             = quadrotor3d.num_u_dims
+    num_x_dims             = quadrotor_3d.num_x_dims
+    num_u_dims             = quadrotor_3d.num_u_dims
     num_dt_dims            = 1
     num_alpha_dims         = num_x_dims + num_u_dims + num_dt_dims
     x_p_inds               = arange(0,3)
@@ -378,7 +378,7 @@ def optimize(p_eval,psi_eval,                            \
         const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals = c_[ const_vals[:-1], X[:-1], X[1:], U[:-1], DT[:-1] ]
 
         J_ti       = J_ti_vectorized_autowrap(common_vals)
-        g_dynamics = quadrotor3d.g_dynamics_ti_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
+        g_dynamics = quadrotor_3d.g_dynamics_ti_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
 
         g_x_waypoint   = zeros((num_lamb_g_x_waypoint_nonzero,   num_dims_g_x_waypoint_ti))
         g_x_p_waypoint = zeros((num_lamb_g_x_p_waypoint_nonzero, num_dims_g_x_p_waypoint_ti))
@@ -392,9 +392,9 @@ def optimize(p_eval,psi_eval,                            \
             lamb_g_x_p_waypoint_ti = lamb_g_x_p_waypoint[ti]
             lamb_g_dt_ti           = lamb_g_dt[ti]
 
-            if lamb_g_x_waypoint_ti   != 0: g_x_waypoint[lamb_g_x_waypoint_ti_to_ti_sparse[ti]]     = sympyutils.evaluate_anon_func( g_x_waypoint_ti_autowrap,   common_vals_ti ).T
-            if lamb_g_x_p_waypoint_ti != 0: g_x_p_waypoint[lamb_g_x_p_waypoint_ti_to_ti_sparse[ti]] = sympyutils.evaluate_anon_func( g_x_p_waypoint_ti_autowrap, common_vals_ti ).T
-            if lamb_g_dt_ti           != 0: g_dt[lamb_g_dt_ti_to_ti_sparse[ti]]                     = sympyutils.evaluate_anon_func( g_dt_ti_autowrap,           common_vals_ti )
+            if lamb_g_x_waypoint_ti   != 0: g_x_waypoint[lamb_g_x_waypoint_ti_to_ti_sparse[ti]]     = sympy_utils.evaluate_anon_func( g_x_waypoint_ti_autowrap,   common_vals_ti ).T
+            if lamb_g_x_p_waypoint_ti != 0: g_x_p_waypoint[lamb_g_x_p_waypoint_ti_to_ti_sparse[ti]] = sympy_utils.evaluate_anon_func( g_x_p_waypoint_ti_autowrap, common_vals_ti ).T
+            if lamb_g_dt_ti           != 0: g_dt[lamb_g_dt_ti_to_ti_sparse[ti]]                     = sympy_utils.evaluate_anon_func( g_dt_ti_autowrap,           common_vals_ti )
 
         J = sum(J_ti)
 
@@ -436,7 +436,7 @@ def optimize(p_eval,psi_eval,                            \
         dgdt_dDT = zeros((num_constraints_1d_g_dt,num_decision_vars_1d_DT))
 
         if not compute_nonzero_only:
-            
+
             common_vals                                                  = c_[ lamb_vals, ref_vals, X, U, DT ]
             const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals = c_[ const_vals[:-1], X[:-1], X[1:], U[:-1], DT[:-1] ]
 
@@ -444,10 +444,10 @@ def optimize(p_eval,psi_eval,                            \
             dJ_dU  = dJti_duti_vectorized_autowrap(common_vals)
             dJ_dDT = dJti_ddtti_vectorized_autowrap(common_vals)
 
-            dgdynamics_dX_current_block  = quadrotor3d.dgdynamicsti_dxcurrent_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
-            dgdynamics_dX_next_block     = quadrotor3d.dgdynamicsti_dxnext_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
-            dgdynamics_dU_current_block  = quadrotor3d.dgdynamicsti_ducurrent_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
-            dgdynamics_dDT_current_block = quadrotor3d.dgdynamicsti_ddtcurrent_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
+            dgdynamics_dX_current_block  = quadrotor_3d.dgdynamicsti_dxcurrent_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
+            dgdynamics_dX_next_block     = quadrotor_3d.dgdynamicsti_dxnext_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
+            dgdynamics_dU_current_block  = quadrotor_3d.dgdynamicsti_ducurrent_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
+            dgdynamics_dDT_current_block = quadrotor_3d.dgdynamicsti_ddtcurrent_vectorized_autowrap(const_and_xcurrent_and_xnext_and_ucurrent_and_dtcurrent_vals)
 
         for ti in range(num_trajectory_samples):
 
@@ -492,17 +492,17 @@ def optimize(p_eval,psi_eval,                            \
             if lamb_g_x_waypoint_ti != 0:
 
                 gi_begin,gi_end,xi_begin,xi_end,ui_begin,ui_end,li_begin,li_end = _compute_sparse_jacobian_indices(ti,lamb_g_x_waypoint_ti_to_ti_sparse,num_dims_g_x_waypoint_ti)
-                dgxwaypoint_dX[gi_begin:gi_end,xi_begin:xi_end]                 = sympyutils.evaluate_anon_func( dgxwaypointti_dxti_autowrap, common_vals_ti )
+                dgxwaypoint_dX[gi_begin:gi_end,xi_begin:xi_end]                 = sympy_utils.evaluate_anon_func( dgxwaypointti_dxti_autowrap, common_vals_ti )
 
             if lamb_g_x_p_waypoint_ti != 0:
 
                 gi_begin,gi_end,xi_begin,xi_end,ui_begin,ui_end,li_begin,li_end = _compute_sparse_jacobian_indices(ti,lamb_g_x_p_waypoint_ti_to_ti_sparse,num_dims_g_x_p_waypoint_ti)
-                dgxpwaypoint_dX[gi_begin:gi_end,xi_begin:xi_end]                = sympyutils.evaluate_anon_func( dgxpwaypointti_dxti_autowrap, common_vals_ti )
+                dgxpwaypoint_dX[gi_begin:gi_end,xi_begin:xi_end]                = sympy_utils.evaluate_anon_func( dgxpwaypointti_dxti_autowrap, common_vals_ti )
 
             if lamb_g_dt_ti != 0:
 
                 gi_begin,gi_end,xi_begin,xi_end,ui_begin,ui_end,dti_begin,dti_end = _compute_sparse_jacobian_indices(ti,lamb_g_dt_ti_to_ti_sparse,num_dims_g_dt_ti)
-                dgdt_dDT[gi_begin:gi_end,dti_begin:dti_end]                       = sympyutils.evaluate_anon_func( dgdtti_ddtti_autowrap, common_vals_ti )
+                dgdt_dDT[gi_begin:gi_end,dti_begin:dti_end]                       = sympy_utils.evaluate_anon_func( dgdtti_ddtti_autowrap, common_vals_ti )
 
         dJ_dAlpha_1d = hstack( [ matrix(dJ_dX).A1, matrix(dJ_dU).A1, matrix(dJ_dDT).A1 ] )
 
@@ -561,7 +561,7 @@ def optimize(p_eval,psi_eval,                            \
     DT_0    = dt_feasible*ones(num_trajectory_samples)
     Alpha_0 = hstack( [ matrix(X_0).A1, matrix(U_0).A1, matrix(DT_0).A1 ] )
 
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Calculating objective value on initial guess..."        
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Calculating objective value on initial guess..."
     _obj_func(Alpha_0)
 
     J_g_1d_min = hstack( [ -inf, zeros(num_constraints_1d_g_dynamics), zeros(num_constraints_1d_g_x_waypoint), zeros(num_constraints_1d_g_x_p_waypoint), zeros(num_constraints_1d_g_dt), snopt_dummy_val ] )
@@ -575,7 +575,7 @@ def optimize(p_eval,psi_eval,                            \
     dJ_dAlpha_dg_dAlpha_nonzero      = r_[ dJ_dAlpha_nonzero, dg_dAlpha_nonzero, snopt_dummy_array ]
     dJ_dAlpha_dg_dAlpha_nonzero_inds = dJ_dAlpha_dg_dAlpha_nonzero.nonzero()
 
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Solving optimization problem..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Solving optimization problem..."
     sys_time_begin = time.time()
 
     snopt.snopta(
@@ -593,11 +593,11 @@ def optimize(p_eval,psi_eval,                            \
         Fnames=None)
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
     solver_time_end = sys_time_end
     solver_time     = solver_time_end - solver_time_begin
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Total solver time was %.03f seconds." % solver_time
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Total solver time was %.03f seconds." % solver_time
 
     Alpha_opt_1d       = snopt.x
     X_opt,U_opt,DT_opt = _unpack_Alpha_1d(Alpha_opt_1d)

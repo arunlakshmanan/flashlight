@@ -6,18 +6,18 @@ import scipy.interpolate
 import sklearn.metrics
 import sympy
 
-import pathutils
-pathutils.add_relative_to_current_source_file_path_to_sys_path("..")
+import path_utils
+path_utils.add_relative_to_current_source_file_path_to_sys_path("../..")
 
-import flashlight.splineutils      as splineutils
-import flashlight.curveutils       as curveutils
-import flashlight.gradientutils    as gradientutils
-import flashlight.interpolateutils as interpolateutils
-import flashlight.sympyutils       as sympyutils
-import flashlight.quadrotor3d      as quadrotor3d
+import flashlight.spline_utils      as spline_utils
+import flashlight.curve_utils       as curve_utils
+import flashlight.gradient_utils    as gradient_utils
+import flashlight.interpolate_utils as interpolate_utils
+import flashlight.sympy_utils       as sympy_utils
+import flashlight.quadrotor_3d      as quadrotor_3d
 
-import flashlight.trajectory_optimization.quadrotor3d_uniform_time_stretch  as quadrotor3d_uniform_time_stretch
-import flashlight.trajectory_optimization.quadrotor3d_gaussian_time_stretch as quadrotor3d_gaussian_time_stretch
+import flashlight.trajectory_optimization.quadrotor_3d_uniform_time_stretch  as quadrotor_3d_uniform_time_stretch
+import flashlight.trajectory_optimization.quadrotor_3d_gaussian_time_stretch as quadrotor_3d_gaussian_time_stretch
 
 from optimize.snopt7 import SNOPT_solver
 
@@ -68,10 +68,10 @@ dt_prev_feasible_vals = None
 
 if build_sympy_modules:
 
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Constructing sympy symbols..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Constructing sympy symbols..."
     sys_time_begin = time.time()
 
-    const_syms = quadrotor3d.const_syms
+    const_syms = quadrotor_3d.const_syms
 
     # path constants for each dimension
     sigma_0_z_expr      = sympy.Symbol("sigma_0_z",      real=True)
@@ -129,9 +129,9 @@ if build_sympy_modules:
     beta_syms = hstack( [ matrix(beta_expr).A1 ] )
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished constructing sympy symbols (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished constructing sympy symbols (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Constructing sympy expressions..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Constructing sympy expressions..."
     sys_time_begin = time.time()
 
     t_expr = sympy.Symbol("t", real=True)
@@ -151,10 +151,10 @@ if build_sympy_modules:
 
     x_expr = sympy.Matrix([q_expr,qdot1_expr])
 
-    H_expr,C_expr,G_expr,B_expr = quadrotor3d.compute_manipulator_matrices_symbolic(x_expr,t_expr)
+    H_expr,C_expr,G_expr,B_expr = quadrotor_3d.compute_manipulator_matrices_symbolic(x_expr,t_expr)
 
     # treat Binv as a constant
-    B_pinv_expr, B_pinv_entries = sympyutils.construct_matrix_and_entries("B_pinv", (4,6), real=True)
+    B_pinv_expr, B_pinv_entries = sympy_utils.construct_matrix_and_entries("B_pinv", (4,6), real=True)
     Binv_syms                   = hstack( [ matrix(B_pinv_expr).A1 ] )
 
     u_expr = B_pinv_expr*(H_expr*qdot2_expr + C_expr*qdot1_expr + G_expr)
@@ -164,16 +164,16 @@ if build_sympy_modules:
     p_dot_expr     = p_expr.diff(t_expr)
     p_dot_dot_expr = p_dot_expr.diff(t_expr)
 
-    f_t_expr            = quadrotor3d.m_expr*p_dot_dot_expr - quadrotor3d.f_external_expr
-    f_t_normalized_expr = sympyutils.normalize(f_t_expr)
+    f_t_expr            = quadrotor_3d.m_expr*p_dot_dot_expr - quadrotor_3d.f_external_expr
+    f_t_normalized_expr = sympy_utils.normalize(f_t_expr)
 
     z_axis_intermediate_expr = sympy.Matrix( [ sympy.cos(psi_expr), 0, -sympy.sin(psi_expr) ])
     y_axis_expr              = f_t_normalized_expr
-    x_axis_expr              = sympyutils.normalize(z_axis_intermediate_expr.cross(y_axis_expr))
-    z_axis_expr              = sympyutils.normalize(y_axis_expr.cross(x_axis_expr))
+    x_axis_expr              = sympy_utils.normalize(z_axis_intermediate_expr.cross(y_axis_expr))
+    z_axis_expr              = sympy_utils.normalize(y_axis_expr.cross(x_axis_expr))
 
-    R_world_from_body_expr = sympyutils.construct_matrix_from_block_matrix( sympy.Matrix( [[z_axis_expr, y_axis_expr, x_axis_expr]] ) )    
-    psi_recomputed_in_terms_of_sigmadotN_expr,theta_in_terms_of_sigmadotN_expr,phi_in_terms_of_sigmadotN_expr = sympyutils.euler_from_matrix(R_world_from_body_expr,"ryxz")
+    R_world_from_body_expr = sympy_utils.construct_matrix_from_block_matrix( sympy.Matrix( [[z_axis_expr, y_axis_expr, x_axis_expr]] ) )
+    psi_recomputed_in_terms_of_sigmadotN_expr,theta_in_terms_of_sigmadotN_expr,phi_in_terms_of_sigmadotN_expr = sympy_utils.euler_from_matrix(R_world_from_body_expr,"ryxz")
 
     theta_phi_in_terms_of_sigmadotN_subs = zip([theta_expr,phi_expr],[theta_in_terms_of_sigmadotN_expr,phi_in_terms_of_sigmadotN_expr])
 
@@ -186,7 +186,7 @@ if build_sympy_modules:
     s_expr                   = sympy.Symbol("s",     real=True)(t_expr)
     sigma_in_terms_of_s_expr = sympy.Symbol("sigma", real=True)(s_expr)
 
-    sigmadotN_in_terms_of_dNsigmadsN0_and_sdotN0_expr = sympyutils.diff_scalar_using_chain_rule(sigma_in_terms_of_s_expr,s_expr,t_expr,ord=4,dNf_dgN_subs=list(dNsigma_dsN_0_expr),dNg_dhN_subs=list(sdotN_0_expr))
+    sigmadotN_in_terms_of_dNsigmadsN0_and_sdotN0_expr = sympy_utils.diff_scalar_using_chain_rule(sigma_in_terms_of_s_expr,s_expr,t_expr,ord=4,dNf_dgN_subs=list(dNsigma_dsN_0_expr),dNg_dhN_subs=list(sdotN_0_expr))
 
     sigmadotNz_in_terms_of_dNsigmadsN0z_and_sdotN0_expr     = sigmadotN_in_terms_of_dNsigmadsN0_and_sdotN0_expr.subs(zip(dNsigma_dsN_0_expr,dNsigma_dsN_0_z_expr),   simultaneous=True)
     sigmadotNy_in_terms_of_dNsigmadsN0y_and_sdotN0_expr     = sigmadotN_in_terms_of_dNsigmadsN0_and_sdotN0_expr.subs(zip(dNsigma_dsN_0_expr,dNsigma_dsN_0_y_expr),   simultaneous=True)
@@ -211,21 +211,21 @@ if build_sympy_modules:
     qdotN_in_terms_of_dNsigmadsN0_and_sdotN0_subs = zip(qdotN_expr[::-1],qdotN_in_terms_of_dNsigmadsN0_and_sdotN0_expr[::-1])
 
     # x and u in terms of dNp/dsN and sdotN
-    x_in_terms_of_dNsigmadsN0_and_sdotN0_expr           = sympyutils.subs_matrix_verbose(x_expr,qdotN_in_terms_of_dNsigmadsN0_and_sdotN0_subs,simultaneous=True)
-    u_in_terms_of_Bpinv_and_dNsigmadsN0_and_sdotN0_expr = sympyutils.subs_matrix_verbose(u_expr,qdotN_in_terms_of_dNsigmadsN0_and_sdotN0_subs,simultaneous=True)
+    x_in_terms_of_dNsigmadsN0_and_sdotN0_expr           = sympy_utils.subs_matrix_verbose(x_expr,qdotN_in_terms_of_dNsigmadsN0_and_sdotN0_subs,simultaneous=True)
+    u_in_terms_of_Bpinv_and_dNsigmadsN0_and_sdotN0_expr = sympy_utils.subs_matrix_verbose(u_expr,qdotN_in_terms_of_dNsigmadsN0_and_sdotN0_subs,simultaneous=True)
 
     # J (minimum time) in terms of dNp/dsN and sdotN
     const_and_path_and_beta_syms = hstack( [ const_syms, path_syms, beta_syms ] )
 
     J_mintime_ti_expr      = ds_expr / sdot1_0_expr
-    dJmintimeti_dbeta_expr = sympyutils.diff_scalar_wrt_vector(J_mintime_ti_expr,beta_expr)
+    dJmintimeti_dbeta_expr = sympy_utils.diff_scalar_wrt_vector(J_mintime_ti_expr,beta_expr)
 
     # J (tracking) in terms of dNp/dsN and sdotN
     sdot1_ref_expr                       = sympy.Symbol("sdot1_ref")
     const_and_path_and_ref_and_beta_syms = hstack( [ const_syms, path_syms, sdot1_ref_expr, beta_syms ] )
 
     J_tracking_ti_expr      = (sdot1_0_expr - sdot1_ref_expr)**2
-    dJtrackingti_dbeta_expr = sympyutils.diff_scalar_wrt_vector(J_tracking_ti_expr,beta_expr)
+    dJtrackingti_dbeta_expr = sympy_utils.diff_scalar_wrt_vector(J_tracking_ti_expr,beta_expr)
 
     # g_x_ti,g_u_ti in terms of dNp/dsN and sdotN
     const_and_path_and_Binv_and_beta_syms = hstack( [ const_syms, path_syms, Binv_syms, beta_syms ] )
@@ -237,8 +237,8 @@ if build_sympy_modules:
     dguti_dbeta_expr = g_u_ti_expr.jacobian(beta_expr)
 
     # g_dynamics in terms of beta and gamma
-    beta_current_expr, beta_current_entries   = sympyutils.construct_matrix_and_entries("beta_current", (4,1), real=True)
-    beta_next_expr,    beta_next_expr_entries = sympyutils.construct_matrix_and_entries("beta_next",    (4,1), real=True)
+    beta_current_expr, beta_current_entries   = sympy_utils.construct_matrix_and_entries("beta_current", (4,1), real=True)
+    beta_next_expr,    beta_next_expr_entries = sympy_utils.construct_matrix_and_entries("beta_next",    (4,1), real=True)
     gamma_current_expr                        = sympy.Symbol("gamma_current")
     dt_current_expr                           = sympy.Symbol("dt_fixed")
 
@@ -255,62 +255,62 @@ if build_sympy_modules:
     dgdynamicsti_dgammacurrent_expr = g_dynamics_ti_expr.diff(gamma_current_expr)
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished constructing sympy expressions (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished constructing sympy expressions (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Building sympy modules..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Building sympy modules..."
     sys_time_begin = time.time()
 
-    current_source_file_path = pathutils.get_current_source_file_path()
+    current_source_file_path = path_utils.get_current_source_file_path()
 
-    sympyutils.build_module_autowrap( expr=J_mintime_ti_expr,               syms=const_and_path_and_beta_syms,                               module_name="J_mintime_ti",               cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dJmintimeti_dbeta_expr,          syms=const_and_path_and_beta_syms,                               module_name="dJmintimeti_dbeta",          cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=J_tracking_ti_expr,              syms=const_and_path_and_ref_and_beta_syms,                       module_name="J_tracking_ti",              cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dJtrackingti_dbeta_expr,         syms=const_and_path_and_ref_and_beta_syms,                       module_name="dJtrackingti_dbeta",         cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=g_x_ti_expr,                     syms=const_and_path_and_beta_syms,                               module_name="g_x_ti",                     cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgxti_dbeta_expr,                syms=const_and_path_and_beta_syms,                               module_name="dgxti_dbeta",                cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=g_u_ti_expr,                     syms=const_and_path_and_Binv_and_beta_syms,                      module_name="g_u_ti",                     cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dguti_dbeta_expr,                syms=const_and_path_and_Binv_and_beta_syms,                      module_name="dguti_dbeta",                cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=g_dynamics_ti_expr,              syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="g_dynamics_ti",              cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgdynamicsti_dbetacurrent_expr,  syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="dgdynamicsti_dbetacurrent",  cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgdynamicsti_dbetanext_expr,     syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="dgdynamicsti_dbetanext",     cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
-    sympyutils.build_module_autowrap( expr=dgdynamicsti_dgammacurrent_expr, syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="dgdynamicsti_dgammacurrent", cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=J_mintime_ti_expr,               syms=const_and_path_and_beta_syms,                               module_name="J_mintime_ti",               cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dJmintimeti_dbeta_expr,          syms=const_and_path_and_beta_syms,                               module_name="dJmintimeti_dbeta",          cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=J_tracking_ti_expr,              syms=const_and_path_and_ref_and_beta_syms,                       module_name="J_tracking_ti",              cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dJtrackingti_dbeta_expr,         syms=const_and_path_and_ref_and_beta_syms,                       module_name="dJtrackingti_dbeta",         cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=g_x_ti_expr,                     syms=const_and_path_and_beta_syms,                               module_name="g_x_ti",                     cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgxti_dbeta_expr,                syms=const_and_path_and_beta_syms,                               module_name="dgxti_dbeta",                cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=g_u_ti_expr,                     syms=const_and_path_and_Binv_and_beta_syms,                      module_name="g_u_ti",                     cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dguti_dbeta_expr,                syms=const_and_path_and_Binv_and_beta_syms,                      module_name="dguti_dbeta",                cse=True,  cse_ordering="none", build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=g_dynamics_ti_expr,              syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="g_dynamics_ti",              cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgdynamicsti_dbetacurrent_expr,  syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="dgdynamicsti_dbetacurrent",  cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgdynamicsti_dbetanext_expr,     syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="dgdynamicsti_dbetanext",     cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
+    sympy_utils.build_module_autowrap( expr=dgdynamicsti_dgammacurrent_expr, syms=const_and_path_and_beta_and_gamma_and_dt_current_next_syms, module_name="dgdynamicsti_dgammacurrent", cse=False,                      build_vectorized=True, tmp_dir="tmp", out_dir=current_source_file_path+"/data/quadrotor_3d_fixed_path", verbose=True, request_delete_tmp_dir=True )
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished building sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished building sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
-print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Loading sympy modules..."
+print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Loading sympy modules..."
 sys_time_begin = time.time()
 
-current_source_file_path = pathutils.get_current_source_file_path()
+current_source_file_path = path_utils.get_current_source_file_path()
 
-J_mintime_ti_autowrap               = sympyutils.import_anon_func_from_from_module_autowrap( module_name="J_mintime_ti",               path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dJmintimeti_dbeta_autowrap          = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJmintimeti_dbeta",          path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-J_tracking_ti_autowrap              = sympyutils.import_anon_func_from_from_module_autowrap( module_name="J_tracking_ti",              path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dJtrackingti_dbeta_autowrap         = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJtrackingti_dbeta",         path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-g_x_ti_autowrap                     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_x_ti",                     path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgxti_dbeta_autowrap                = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgxti_dbeta",                path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-g_u_ti_autowrap                     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_u_ti",                     path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dguti_dbeta_autowrap                = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dguti_dbeta",                path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-g_dynamics_ti_autowrap              = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_dynamics_ti",              path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgdynamicsti_dbetacurrent_autowrap  = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetacurrent",  path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgdynamicsti_dbetanext_autowrap     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetanext",     path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgdynamicsti_dgammacurrent_autowrap = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dgammacurrent", path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
+J_mintime_ti_autowrap               = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="J_mintime_ti",               path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dJmintimeti_dbeta_autowrap          = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJmintimeti_dbeta",          path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+J_tracking_ti_autowrap              = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="J_tracking_ti",              path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dJtrackingti_dbeta_autowrap         = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJtrackingti_dbeta",         path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+g_x_ti_autowrap                     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_x_ti",                     path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgxti_dbeta_autowrap                = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgxti_dbeta",                path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+g_u_ti_autowrap                     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_u_ti",                     path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dguti_dbeta_autowrap                = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dguti_dbeta",                path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+g_dynamics_ti_autowrap              = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_dynamics_ti",              path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgdynamicsti_dbetacurrent_autowrap  = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetacurrent",  path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgdynamicsti_dbetanext_autowrap     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetanext",     path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgdynamicsti_dgammacurrent_autowrap = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dgammacurrent", path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
 
-J_mintime_ti_vectorized_autowrap               = sympyutils.import_anon_func_from_from_module_autowrap( module_name="J_mintime_ti_vectorized",               path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dJmintimeti_dbeta_vectorized_autowrap          = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJmintimeti_dbeta_vectorized",          path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-J_tracking_ti_vectorized_autowrap              = sympyutils.import_anon_func_from_from_module_autowrap( module_name="J_tracking_ti_vectorized",              path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dJtrackingti_dbeta_vectorized_autowrap         = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dJtrackingti_dbeta_vectorized",         path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-g_x_ti_vectorized_autowrap                     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_x_ti_vectorized",                     path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgxti_dbeta_vectorized_autowrap                = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgxti_dbeta_vectorized",                path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-g_u_ti_vectorized_autowrap                     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_u_ti_vectorized",                     path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dguti_dbeta_vectorized_autowrap                = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dguti_dbeta_vectorized",                path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-g_dynamics_ti_vectorized_autowrap              = sympyutils.import_anon_func_from_from_module_autowrap( module_name="g_dynamics_ti_vectorized",              path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgdynamicsti_dbetacurrent_vectorized_autowrap  = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetacurrent_vectorized",  path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgdynamicsti_dbetanext_vectorized_autowrap     = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetanext_vectorized",     path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
-dgdynamicsti_dgammacurrent_vectorized_autowrap = sympyutils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dgammacurrent_vectorized", path=current_source_file_path+"/data/quadrotor3d_fixed_path" )
+J_mintime_ti_vectorized_autowrap               = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="J_mintime_ti_vectorized",               path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dJmintimeti_dbeta_vectorized_autowrap          = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJmintimeti_dbeta_vectorized",          path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+J_tracking_ti_vectorized_autowrap              = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="J_tracking_ti_vectorized",              path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dJtrackingti_dbeta_vectorized_autowrap         = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dJtrackingti_dbeta_vectorized",         path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+g_x_ti_vectorized_autowrap                     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_x_ti_vectorized",                     path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgxti_dbeta_vectorized_autowrap                = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgxti_dbeta_vectorized",                path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+g_u_ti_vectorized_autowrap                     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_u_ti_vectorized",                     path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dguti_dbeta_vectorized_autowrap                = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dguti_dbeta_vectorized",                path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+g_dynamics_ti_vectorized_autowrap              = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="g_dynamics_ti_vectorized",              path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgdynamicsti_dbetacurrent_vectorized_autowrap  = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetacurrent_vectorized",  path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgdynamicsti_dbetanext_vectorized_autowrap     = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dbetanext_vectorized",     path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
+dgdynamicsti_dgammacurrent_vectorized_autowrap = sympy_utils.import_anon_func_from_from_module_autowrap( module_name="dgdynamicsti_dgammacurrent_vectorized", path=current_source_file_path+"/data/quadrotor_3d_fixed_path" )
 
 sys_time_end = time.time()
-print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished loading sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
+print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished loading sympy modules (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
 
 
@@ -321,7 +321,7 @@ def optimize(p_eval,psi_eval,                            \
              u_min_ti,u_max_ti,                          \
              opt_problem_type):
 
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Initializing optimization problem..."
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Initializing optimization problem..."
     sys_time_begin    = time.time()
     solver_time_begin = sys_time_begin
 
@@ -339,7 +339,7 @@ def optimize(p_eval,psi_eval,                            \
     for i in range(make_positive_max_iters):
 
         if all(diff_user_progress_current >= 0.00001):
-            print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Found positive easing curve after %d smoothing iterations." % i
+            print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Found positive easing curve after %d smoothing iterations." % i
             found = True
             break
         else:
@@ -353,7 +353,7 @@ def optimize(p_eval,psi_eval,                            \
             diff_user_progress_current = diff_user_progress_current + gauss_scaled
 
     if not found:
-        print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: WARNING: Could not find positive easing curve."
+        print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: WARNING: Could not find positive easing curve."
 
     #
     # find numerically stable and feasible trajectories to initialize the solver
@@ -361,7 +361,7 @@ def optimize(p_eval,psi_eval,                            \
     user_progress_nominal_positive_denorm = hstack( [ user_progress_nominal[0], user_progress_nominal[0] + cumsum(diff_user_progress_current) ] )
     user_progress_nominal_positive        = user_progress_nominal_positive_denorm / user_progress_nominal_positive_denorm[-1]
 
-    numerically_stable_infeasible_trajectory = quadrotor3d_gaussian_time_stretch.optimize_numerically_stable_infeasible( p_eval,psi_eval,                                     \
+    numerically_stable_infeasible_trajectory = quadrotor_3d_gaussian_time_stretch.optimize_numerically_stable_infeasible( p_eval,psi_eval,                                     \
                                                                                                                          t_nominal,user_progress_nominal_positive,dt_nominal, \
                                                                                                                          x_min_ti,x_max_ti,                                   \
                                                                                                                          u_min_ti,u_max_ti,                                   \
@@ -375,7 +375,7 @@ def optimize(p_eval,psi_eval,                            \
     if use_gaussian_time_stretching_for_feasible:
 
         # use uniform time stretching to find a feasible trajectory
-        feasible_trajectory = quadrotor3d_gaussian_time_stretch.optimize_feasible( p_eval,psi_eval,                                                             \
+        feasible_trajectory = quadrotor_3d_gaussian_time_stretch.optimize_feasible( p_eval,psi_eval,                                                             \
                                                                                    t_numerically_stable,user_progress_numerically_stable,dt_numerically_stable, \
                                                                                    x_min_ti,x_max_ti,                                                           \
                                                                                    u_min_ti,u_max_ti,                                                           \
@@ -389,10 +389,10 @@ def optimize(p_eval,psi_eval,                            \
     else:
 
         # use uniform time stretching to find a feasible trajectory
-        p_nominal, _, _, _   = curveutils.reparameterize_curve( p_eval, user_progress_nominal )
-        psi_nominal, _, _, _ = curveutils.reparameterize_curve( psi_eval, user_progress_nominal )
+        p_nominal, _, _, _   = curve_utils.reparameterize_curve( p_eval, user_progress_nominal )
+        psi_nominal, _, _, _ = curve_utils.reparameterize_curve( psi_eval, user_progress_nominal )
 
-        feasible_trajectory = quadrotor3d_uniform_time_stretch.optimize_feasible( p_nominal,psi_nominal,dt_nominal, \
+        feasible_trajectory = quadrotor_3d_uniform_time_stretch.optimize_feasible( p_nominal,psi_nominal,dt_nominal, \
                                                                                   x_min_ti,x_max_ti,                \
                                                                                   u_min_ti,u_max_ti,                \
                                                                                   max_bin_search_iters_feasible,    \
@@ -407,17 +407,17 @@ def optimize(p_eval,psi_eval,                            \
     # return user_progress_feasible,None,None,None,None,t_feasible,t_feasible[-1]
 
     sys_time_end = time.time()
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished initializing optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished initializing optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
     Alpha_opt_1d = None
 
     for extra_iters_numerically_stable in range(min_extra_iters_numerically_stable,max_extra_iters_numerically_stable):
 
-        print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Attempting to solve problem with extra_iters_numerically_stable = %d." % extra_iters_numerically_stable
-        print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Computing numerically stable goal trajectory..."
+        print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Attempting to solve problem with extra_iters_numerically_stable = %d." % extra_iters_numerically_stable
+        print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Computing numerically stable goal trajectory..."
         sys_time_begin = time.time()
 
-        numerically_stable_infeasible_trajectory = quadrotor3d_gaussian_time_stretch.optimize_numerically_stable_infeasible( p_eval,psi_eval,                                                             \
+        numerically_stable_infeasible_trajectory = quadrotor_3d_gaussian_time_stretch.optimize_numerically_stable_infeasible( p_eval,psi_eval,                                                             \
                                                                                                                              t_numerically_stable,user_progress_numerically_stable,dt_numerically_stable, \
                                                                                                                              x_min_ti,x_max_ti,                                                           \
                                                                                                                              u_min_ti,u_max_ti,                                                           \
@@ -429,7 +429,7 @@ def optimize(p_eval,psi_eval,                            \
         x_numerically_stable,u_numerically_stable,t_numerically_stable,user_progress_numerically_stable,dt_numerically_stable = numerically_stable_infeasible_trajectory
 
         sys_time_end = time.time()
-        print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished computing numerically stable goal trajectory (%.03f seconds)." % (sys_time_end - sys_time_begin)
+        print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished computing numerically stable goal trajectory (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
         num_trajectory_samples = t_nominal.shape[0]
 
@@ -451,23 +451,23 @@ def optimize(p_eval,psi_eval,                            \
         num_decision_vars_1d_Gamma    = num_trajectory_samples*num_gamma_dims
 
         s_numerically_stable  = user_progress_numerically_stable
-        ds_numerically_stable = gradientutils.gradients_scalar_wrt_scalar_smooth_boundaries(s_numerically_stable,dt=1,max_gradient=1,poly_deg=5)[1]
+        ds_numerically_stable = gradient_utils.gradients_scalar_wrt_scalar_smooth_boundaries(s_numerically_stable,dt=1,max_gradient=1,poly_deg=5)[1]
 
         s_feasible  = user_progress_feasible
-        ds_feasible = gradientutils.gradients_scalar_wrt_scalar_smooth_boundaries(s_feasible,dt=1,max_gradient=1,poly_deg=5)[1]
+        ds_feasible = gradient_utils.gradients_scalar_wrt_scalar_smooth_boundaries(s_feasible,dt=1,max_gradient=1,poly_deg=5)[1]
 
         # compute path derivatives using numerically stable trajectory as a reference
         sigma_numerically_stable = x_numerically_stable[:,[0,1,2,4]]
 
-        dNsigma_dsN_numerically_stable = gradientutils.gradients_vector_wrt_scalar_smooth_boundaries_nonconst_dt(sigma_numerically_stable,s_numerically_stable,max_gradient=4,poly_deg=5)
+        dNsigma_dsN_numerically_stable = gradient_utils.gradients_vector_wrt_scalar_smooth_boundaries_nonconst_dt(sigma_numerically_stable,s_numerically_stable,max_gradient=4,poly_deg=5)
         d1sigma_ds1_numerically_stable = dNsigma_dsN_numerically_stable[1]
         d2sigma_ds2_numerically_stable = dNsigma_dsN_numerically_stable[2]
         d3sigma_ds3_numerically_stable = dNsigma_dsN_numerically_stable[3]
         d4sigma_ds4_numerically_stable = dNsigma_dsN_numerically_stable[4]
 
         # set limits on beta using numerically stable and feasible as upper and lower bound
-        sdotN_numerically_stable = gradientutils.gradients_vector_wrt_scalar_smooth_boundaries_forward_diffs(s_numerically_stable[:,newaxis],dt_numerically_stable,max_gradient=5,poly_deg=5)
-        sdotN_feasible           = gradientutils.gradients_vector_wrt_scalar_smooth_boundaries_forward_diffs(s_feasible[:,newaxis],dt_feasible,max_gradient=5,poly_deg=5)
+        sdotN_numerically_stable = gradient_utils.gradients_vector_wrt_scalar_smooth_boundaries_forward_diffs(s_numerically_stable[:,newaxis],dt_numerically_stable,max_gradient=5,poly_deg=5)
+        sdotN_feasible           = gradient_utils.gradients_vector_wrt_scalar_smooth_boundaries_forward_diffs(s_feasible[:,newaxis],dt_feasible,max_gradient=5,poly_deg=5)
 
         sdotN_min = minimum(sdotN_numerically_stable,sdotN_feasible)
         sdotN_max = maximum(sdotN_numerically_stable,sdotN_feasible)
@@ -566,7 +566,7 @@ def optimize(p_eval,psi_eval,                            \
 
             const_and_x_vals = c_[ const_vals, g_x ]
 
-            B     = quadrotor3d.B_vectorized_autowrap(const_and_x_vals)
+            B     = quadrotor_3d.B_vectorized_autowrap(const_and_x_vals)
             Bpinv = zeros((num_trajectory_samples,4,6))
 
             for ti in range(num_trajectory_samples):
@@ -677,7 +677,7 @@ def optimize(p_eval,psi_eval,                            \
 
                 const_and_x_vals = c_[ const_vals, g_x ]
 
-                B     = quadrotor3d.B_vectorized_autowrap(const_and_x_vals)
+                B     = quadrotor_3d.B_vectorized_autowrap(const_and_x_vals)
                 Bpinv = zeros((num_trajectory_samples,4,6))
 
                 for ti in range(num_trajectory_samples): Bpinv[ti] = linalg.pinv(B[ti])
@@ -798,7 +798,7 @@ def optimize(p_eval,psi_eval,                            \
         Gamma_0 = matrix( c_[ matrix(sdotN_feasible[5]).A1 ] ).A1
         Alpha_0 = hstack( [ Beta_0, Gamma_0 ] )
 
-        print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Calculating objective value on initial guess..."        
+        print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Calculating objective value on initial guess..."
         _obj_func(Alpha_0)
 
         snopt_major_iter_count = 0
@@ -815,11 +815,11 @@ def optimize(p_eval,psi_eval,                            \
         dJ_dAlpha_dg_dAlpha_nonzero_inds = dJ_dAlpha_dg_dAlpha_nonzero.nonzero()
 
         try:
-            print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Solving optimization problem..."
+            print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Solving optimization problem..."
             sys_time_begin = time.time()
 
             snopt.snopta(
-                name="flashlight.trajectory_optimization.quadrotor3d_fixed_path",
+                name="flashlight.trajectory_optimization.quadrotor_3d_fixed_path",
                 usrfun=_obj_grad_func,
                 x0=Alpha_0,
                 xlow=Alpha_min,
@@ -834,33 +834,33 @@ def optimize(p_eval,psi_eval,                            \
 
             if snopt.exit == 0 and snopt.info == 1:
                 Alpha_opt_1d = snopt.x
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished successfully with extra_iters_numerically_stable = %d." % extra_iters_numerically_stable
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished successfully with extra_iters_numerically_stable = %d." % extra_iters_numerically_stable
                 sys_time_end = time.time()
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
                 break
             else:
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Encountered numerical difficulties, no feasibe trajectory found, trying again with more conservative goal trajectory."
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Encountered numerical difficulties, no feasibe trajectory found, trying again with more conservative goal trajectory."
                 sys_time_end = time.time()
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
         except (SystemError):
             if snopt_Alpha_opt_1d is not None:
                 Alpha_opt_1d = snopt_Alpha_1d_current_best
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Maximum number of iterations reached, returning current best trajectory with extra_iters_numerically_stable = %d." % extra_iters_numerically_stable
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Maximum number of iterations reached, returning current best trajectory with extra_iters_numerically_stable = %d." % extra_iters_numerically_stable
                 sys_time_end = time.time()
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
                 break
             else:
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Encountered numerical difficulties, no feasibe trajectory found, trying again with more conservative goal trajectory."
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Encountered numerical difficulties, no feasibe trajectory found, trying again with more conservative goal trajectory."
                 sys_time_end = time.time()
-                print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
+                print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Finished solving optimization problem (%.03f seconds)." % (sys_time_end - sys_time_begin)
 
     if Alpha_opt_1d is None:
-        print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: No feasibe trajectory found, returning initial feasible guess trajectory."
+        print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: No feasibe trajectory found, returning initial feasible guess trajectory."
         Alpha_opt_1d = Alpha_0
 
     solver_time_end = sys_time_end
     solver_time     = solver_time_end - solver_time_begin
-    print "flashlight.trajectory_optimization.quadrotor3d_fixed_path: Total solver time was %.03f seconds." % solver_time
+    print "flashlight.trajectory_optimization.quadrotor_3d_fixed_path: Total solver time was %.03f seconds." % solver_time
 
     Beta_opt,Gamma_opt = _unpack_Alpha_1d(Alpha_opt_1d)
 
@@ -868,7 +868,7 @@ def optimize(p_eval,psi_eval,                            \
     X_opt                        = g_x_ti_vectorized_autowrap(const_and_path_and_beta_vals)
     const_and_x_vals             = c_[ const_vals, X_opt ]
 
-    B     = quadrotor3d.B_vectorized_autowrap(const_and_x_vals)
+    B     = quadrotor_3d.B_vectorized_autowrap(const_and_x_vals)
     Bpinv = zeros((num_trajectory_samples,4,6))
 
     for ti in range(num_trajectory_samples): Bpinv[ti] = linalg.pinv(B[ti])
